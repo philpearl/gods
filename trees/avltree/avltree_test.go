@@ -5,6 +5,7 @@ package avltree
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 )
 
@@ -587,155 +588,83 @@ func TestAVLTreeSerialization(t *testing.T) {
 	assert()
 }
 
-func benchmarkGet(b *testing.B, tree *Tree, size int) {
-	for i := 0; i < b.N; i++ {
-		for n := 0; n < size; n++ {
-			tree.Get(n)
-		}
+func BenchmarkAVLTreeGet(b *testing.B) {
+	for _, size := range []int{100, 1000, 10000, 100000} {
+		b.Run(strconv.Itoa(size), func(b *testing.B) {
+			tree := NewWithIntComparator()
+
+			// Avoid overhead of wrapping the keys in an interface{}
+			// for each iteration
+			keys := make([]interface{}, size)
+			for i := range keys {
+				keys[i] = i
+			}
+
+			// Create the entries we're going to get
+			for n := 0; n < size; n++ {
+				tree.Put(keys[n], struct{}{})
+			}
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				for n := 0; n < size; n++ {
+					tree.Get(keys[n])
+				}
+			}
+		})
 	}
 }
 
-func benchmarkPut(b *testing.B, tree *Tree, size int) {
-	for i := 0; i < b.N; i++ {
-		for n := 0; n < size; n++ {
-			tree.Put(n, struct{}{})
-		}
+func BenchmarkAVLTreePut(b *testing.B) {
+	for _, size := range []int{100, 1000, 10000, 100000} {
+		b.Run(strconv.Itoa(size), func(b *testing.B) {
+			tree := NewWithIntComparator()
+
+			// Avoid overhead of wrapping the keys in an interface{}
+			// for each iteration
+			keys := make([]interface{}, size)
+			for i := range keys {
+				keys[i] = i
+			}
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				for n := 0; n < size; n++ {
+					tree.Put(keys[n], struct{}{})
+				}
+				// Clear the tree so we're actually putting each loop
+				tree.Clear()
+			}
+		})
 	}
 }
 
-func benchmarkRemove(b *testing.B, tree *Tree, size int) {
-	for i := 0; i < b.N; i++ {
-		for n := 0; n < size; n++ {
-			tree.Remove(n)
-		}
-	}
-}
+func BenchmarkAVLTreeRemove(b *testing.B) {
+	for _, size := range []int{100, 1000, 10000, 100000} {
+		b.Run(strconv.Itoa(size), func(b *testing.B) {
+			tree := NewWithIntComparator()
 
-func BenchmarkAVLTreeGet100(b *testing.B) {
-	b.StopTimer()
-	size := 100
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkGet(b, tree, size)
-}
+			keys := make([]interface{}, size)
+			for i := range keys {
+				keys[i] = i
+			}
 
-func BenchmarkAVLTreeGet1000(b *testing.B) {
-	b.StopTimer()
-	size := 1000
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkGet(b, tree, size)
-}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				// Must make sure there's something to remove for each run
+				b.StopTimer()
+				for n := 0; n < size; n++ {
+					tree.Put(keys[n], struct{}{})
+				}
+				b.StartTimer()
 
-func BenchmarkAVLTreeGet10000(b *testing.B) {
-	b.StopTimer()
-	size := 10000
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
+				for n := 0; n < size; n++ {
+					tree.Remove(keys[n])
+				}
+			}
+		})
 	}
-	b.StartTimer()
-	benchmarkGet(b, tree, size)
-}
-
-func BenchmarkAVLTreeGet100000(b *testing.B) {
-	b.StopTimer()
-	size := 100000
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkGet(b, tree, size)
-}
-
-func BenchmarkAVLTreePut100(b *testing.B) {
-	b.StopTimer()
-	size := 100
-	tree := NewWithIntComparator()
-	b.StartTimer()
-	benchmarkPut(b, tree, size)
-}
-
-func BenchmarkAVLTreePut1000(b *testing.B) {
-	b.StopTimer()
-	size := 1000
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkPut(b, tree, size)
-}
-
-func BenchmarkAVLTreePut10000(b *testing.B) {
-	b.StopTimer()
-	size := 10000
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkPut(b, tree, size)
-}
-
-func BenchmarkAVLTreePut100000(b *testing.B) {
-	b.StopTimer()
-	size := 100000
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkPut(b, tree, size)
-}
-
-func BenchmarkAVLTreeRemove100(b *testing.B) {
-	b.StopTimer()
-	size := 100
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkRemove(b, tree, size)
-}
-
-func BenchmarkAVLTreeRemove1000(b *testing.B) {
-	b.StopTimer()
-	size := 1000
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkRemove(b, tree, size)
-}
-
-func BenchmarkAVLTreeRemove10000(b *testing.B) {
-	b.StopTimer()
-	size := 10000
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkRemove(b, tree, size)
-}
-
-func BenchmarkAVLTreeRemove100000(b *testing.B) {
-	b.StopTimer()
-	size := 100000
-	tree := NewWithIntComparator()
-	for n := 0; n < size; n++ {
-		tree.Put(n, struct{}{})
-	}
-	b.StartTimer()
-	benchmarkRemove(b, tree, size)
 }
