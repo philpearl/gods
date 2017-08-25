@@ -11,6 +11,7 @@ package avltree
 
 import (
 	"fmt"
+
 	"github.com/emirpasic/gods/trees"
 	"github.com/emirpasic/gods/utils"
 )
@@ -24,7 +25,11 @@ type Tree struct {
 	Root       *Node            // Root node
 	Comparator utils.Comparator // Key comparator
 	size       int              // Total number of keys in the tree
+
+	nodeCache []Node // Used to reduce node allocations
 }
+
+const nodeCacheAllocSize = 1000
 
 // Node is a single element within the tree
 type Node struct {
@@ -200,11 +205,25 @@ func (n *Node) String() string {
 	return fmt.Sprintf("%v", n.Key)
 }
 
+func (t *Tree) newNode() *Node {
+	l := len(t.nodeCache)
+	if t.nodeCache == nil || l == cap(t.nodeCache) {
+		t.nodeCache = make([]Node, 0, nodeCacheAllocSize)
+		l = 0
+	}
+	t.nodeCache = t.nodeCache[:l+1]
+	return &t.nodeCache[l]
+}
+
 func (t *Tree) put(key interface{}, value interface{}, p *Node, qp **Node) bool {
 	q := *qp
 	if q == nil {
 		t.size++
-		*qp = &Node{Key: key, Value: value, Parent: p}
+		n := t.newNode()
+		n.Key = key
+		n.Value = value
+		n.Parent = p
+		*qp = n
 		return true
 	}
 
